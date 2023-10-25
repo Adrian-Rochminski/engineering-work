@@ -17,3 +17,6 @@ class Entity:
 
     def move_right(self):
         self.x += 1
+
+    def get_type(self):
+        return self.type
