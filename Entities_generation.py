@@ -12,26 +12,28 @@ def read_conf():
     number_of_population = config['number_of_population']
     herbivores_percent = config['herbivores_percent']
     carnivores_percent = config['carnivores_percent']
-
+    number_of_plants = config['plant_population']
     herbivores = int(number_of_population * herbivores_percent)
     carnivores = int(number_of_population * carnivores_percent)
 
-    return number_of_population, herbivores, carnivores
+    return number_of_population, herbivores, carnivores, number_of_plants
 
 
 def generate_population():
-    population = []
-    number_of_population, herbivores, carnivores = read_conf()
-    for _ in range(herbivores):
-        genomes = generate_genomes()
-        entity = Entity( random.randint(0,99), random.randint(0,99), 'H', 'herbivore', genomes)
-        population.append(entity)
+    number_of_population, herbivores, carnivores, number_of_plants = read_conf()
+    positions = [(x, y) for x in range(100) for y in range(100)]
+    random.shuffle(positions)
 
-    for _ in range(carnivores):
-        genomes = generate_genomes()
-        entity = Entity(random.randint(0,99), random.randint(0,99), 'C', 'carnivore', genomes)
-        population.append(entity)
-    return population
+    def create_entity(symbol, entity_type, genomes):
+        x, y = positions.pop()
+        return Entity(x, y, symbol, entity_type, genomes)
+
+    population = [create_entity('H', 'herbivore', generate_genomes()) for _ in range(herbivores)]
+    population.extend(create_entity('C', 'carnivore', generate_genomes()) for _ in range(carnivores))
+
+    plants = [create_entity('P', 'plant', []) for _ in range(number_of_plants)]
+
+    return population, plants
 
 
 def generate_genomes():

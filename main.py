@@ -3,8 +3,8 @@ from Entities_generation import generate_population
 
 
 def main():
-    entities_population = generate_population()
-    game_map = Map(100, 100, entities_population)
+    entities_population, plant_population = generate_population()
+    game_map = Map(100, 100, entities_population, plant_population)
     game_map.display()
 
 
