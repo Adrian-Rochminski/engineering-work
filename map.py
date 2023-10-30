@@ -14,11 +14,14 @@ class Map:
         self.plants = plants
         self.game_ticks = 0
         self.moves = {
-            'up': (-1, 0),
-            'down': (1, 0),
-            'left': (0, -1),
-            'right': (0, 1),
-            None : (0, 0),
+            'up': (0, -1),
+            'down': (0, 1),
+            'left': (-1, 0),
+            'right': (1, 0),
+            'up-left': (-1, -1),
+            'up-right': (1, -1),
+            'down-left': (-1, 1),
+            'down-right': (1, 1)
         }
 
     def add_entity(self, entity):
@@ -44,6 +47,7 @@ class Map:
                     plant.x == entity.x and plant.y == entity.y for plant in self.plants):
                 self.plants = list(filter(lambda plant: plant.x != entity.x or plant.y != entity.y, self.plants))
                 self.grid[entity.y][entity.x] = '.'
+                entity.food += 1
 
             print(str(entity.y) + " " + str(entity.x))
             self.grid[entity.y][entity.x] = entity.symbol
@@ -140,7 +144,7 @@ class Map:
                     if map_width + 20 <= x <= map_width + 20 + button_size[0] and font_size * 7 <= y <= font_size * 7 + \
                             button_size[1]:
                         plt.plot(self.entity_distribution)
-                        plt.legend(['Herbivores', 'Carnivores','Plants'])
+                        plt.legend(['Herbivores', 'Carnivores', 'Plants'])
                         plt.show()
 
             self.update()
