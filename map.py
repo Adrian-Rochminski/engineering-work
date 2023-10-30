@@ -13,6 +13,13 @@ class Map:
         self.entity_distribution = []
         self.plants = plants
         self.game_ticks = 0
+        self.moves = {
+            'up': (-1, 0),
+            'down': (1, 0),
+            'left': (0, -1),
+            'right': (0, 1),
+            None : (0, 0),
+        }
 
     def add_entity(self, entity):
         self.entities.append(entity)
@@ -22,15 +29,16 @@ class Map:
         for entity in self.entities:
             self.grid[entity.y][entity.x] = '.'
             direction = entity.make_a_move(self.grid)
-            if direction:
-                if direction == 'up' and entity.y > 0 and self.grid[entity.y - 1][entity.x] == '.':
-                    entity.move_up()
-                elif direction == 'down' and entity.y < self.height - 1 and self.grid[entity.y + 1][entity.x] == '.':
-                    entity.move_down()
-                elif direction == 'left' and entity.x > 0 and self.grid[entity.y][entity.x - 1] == '.':
-                    entity.move_left()
-                elif direction == 'right' and entity.x < self.width - 1 and self.grid[entity.y][entity.x + 1] == '.':
-                    entity.move_right()
+            print(direction)
+            dx, dy = self.moves[direction]
+
+            new_x = entity.x + dx
+            new_y = entity.y + dy
+
+            if (0 <= new_x < len(self.grid[0]) and
+                    0 <= new_y < len(self.grid)):
+                entity.x = new_x
+                entity.y = new_y
 
             if entity.get_type() == 'herbivore' and any(
                     plant.x == entity.x and plant.y == entity.y for plant in self.plants):
@@ -119,6 +127,7 @@ class Map:
         win = pygame.display.set_mode((window_width, window_height))
         self.draw_plants()
         run = True
+        print(self.grid)
         while run:
             pygame.time.delay(100)
 
