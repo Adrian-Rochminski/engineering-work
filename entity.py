@@ -2,11 +2,14 @@ import random
 
 
 class Entity:
-    def __init__(self, x, y, symbol, type, genomes):
+    def __init__(self, x, y, symbol, type, genomes, required_food, max_age):
         self.x = x
         self.y = y
+        self.age = 1
+        self.max_age = max_age + 1000
         self.symbol = symbol
         self.food = 0
+        self.required_food = required_food / required_food
         self.type = type
         self.genomes = genomes
         self.view_range = 5
@@ -25,10 +28,19 @@ class Entity:
             'C': 'H',
             'H': 'P'
         }
+        self.statuses = {
+            'death': None,
+            'death_from_old_age': None,
+            'reproduce': None
+        }
 
     def get_type(self):
         return self.type
 
+    def check_status(self):
+        if self.age >= self.max_age:
+            return 'death_from_old_age'
+        return None
 
     def is_move_possible(self, dx, dy, mapa):
         new_x = self.x + dx if 0 <= self.x + dx < len(mapa[0]) else self.x
@@ -51,6 +63,19 @@ class Entity:
         return None
 
     def decide_action(self, map):
+        status = self.check_status()
+        if status:
+            return None, 'death_from_old_age'
+        if self.is_ready_to_reproduce():
+            mate_position = self.find_nearest_mate(map)
+            if mate_position:
+                direction_to_mate = self.get_direction_to_entity(mate_position)
+                distance_to_mate = abs(mate_position[0] - self.x) + abs(mate_position[1] - self.y)
+                if distance_to_mate == 1:
+                    offspring = self.reproduce(map)
+                    if offspring:
+                        return offspring, 'reproduce'
+                return direction_to_mate, None
         food_type = self.relations[self.symbol]
         enemy_types = [k for k, v in self.relations.items() if v == self.symbol]
 
@@ -58,16 +83,19 @@ class Entity:
         enemies = [self.entity_search(map, enemy_type) for enemy_type in enemy_types if
                    self.entity_search(map, enemy_type)]
         print("##############")
+        print(self.type)
+        print(food)
+        print(enemies)
         if food:
             print(self.get_direction_to_entity(food[1]))
             # print("@" + (enemies) + "@")
             print("##############")
             if not enemies or food[0] < min(enemy[0] for enemy in enemies):
-                return self.get_direction_to_entity(food[1])
+                return self.get_direction_to_entity(food[1]), None
         elif enemies:
-            return self.get_opposite_direction(min(enemies, key=lambda x: x[0]))
+            return self.get_opposite_direction(min(enemies, key=lambda x: x[0])[1]), None
 
-        return self.random_move(map)
+        return self.random_move(map), None
 
     def random_move(self, map):
         possible_moves = [move for move in self.moves.keys() if self.is_move_possible(*self.moves[move], map)]
@@ -112,3 +140,40 @@ class Entity:
             possible_moves = [move for move in self.moves.keys() if self.is_move_possible(*self.moves[move], mapa)]
             if possible_moves:
                 return random.choice(possible_moves)
+
+    def is_ready_to_reproduce(self):
+        return self.food >= self.required_food
+
+    def find_nearest_mate(self, map):
+        same_type_entities = self.entity_search(map, self.symbol)
+        if same_type_entities:
+            return same_type_entities[1]
+        return None
+
+    def get_available_neighbour_positions(self, map):
+        positions = []
+        for dx, dy in self.moves.values():
+            new_x = self.x + dx
+            new_y = self.y + dy
+            if 0 <= new_x < len(map[0]) and 0 <= new_y < len(map) and map[new_y][new_x] == '.':
+                positions.append((new_x, new_y))
+        return positions
+
+    def is_neighbour_with_same_type(self, map):
+        for dx, dy in self.moves.values():
+            new_x = self.x + dx
+            new_y = self.y + dy
+            if 0 <= new_x < len(map[0]) and 0 <= new_y < len(map) and map[new_y][new_x] == self.symbol:
+                return True
+        return False
+
+    def reproduce(self, map):
+        if not self.is_neighbour_with_same_type(map):
+            return None
+        available_positions = self.get_available_neighbour_positions(map)
+        if available_positions:
+            new_x, new_y = random.choice(available_positions)
+            offspring = Entity(new_x, new_y, self.symbol, self.type, self.genomes, self.required_food, self.max_age)
+            self.food = 0
+            return offspring
+        return None

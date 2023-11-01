@@ -26,7 +26,7 @@ def generate_population():
 
     def create_entity(symbol, entity_type, genomes):
         x, y = positions.pop()
-        return Entity(x, y, symbol, entity_type, genomes)
+        return Entity(x, y, symbol, entity_type, genomes,5, 100)
 
     population = [create_entity('H', 'herbivore', generate_genomes()) for _ in range(herbivores)]
     population.extend(create_entity('C', 'carnivore', generate_genomes()) for _ in range(carnivores))
