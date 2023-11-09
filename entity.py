@@ -2,17 +2,25 @@ import random
 
 
 class Entity:
-    def __init__(self, x, y, symbol, type, genomes, required_food, max_age):
+
+    def __init__(self, x, y):
         self.x = x
         self.y = y
         self.age = 1
-        self.max_age = max_age + 1000
-        self.symbol = symbol
-        self.food = 0
-        self.required_food = required_food / required_food
-        self.type = type
-        self.genomes = genomes
-        self.view_range = 5
+        self.generation = 1
+        self.max_age = 0
+        self.min_reproductive_age = 0
+        self.max_reproductive_age = 0
+        self.symbol = ""
+        self.food = 1
+        self.required_food = 0
+        self.type = ""
+        self.genomes = {}
+        self.view_range = 0
+        self.smell = 0
+        self.stamina = 0
+        self.full_belly = 0
+        self.num_children = 0
         self.moves = {
             'up': (0, -1),
             'down': (0, 1),
@@ -34,6 +42,20 @@ class Entity:
             'reproduce': None
         }
 
+    def update_fields(self, config_data):
+        self.max_age = config_data.get('max_age', self.max_age)
+        self.min_reproductive_age = config_data.get('min_reproductive_age', self.min_reproductive_age)
+        self.max_reproductive_age = config_data.get('max_reproductive_age', self.max_reproductive_age)
+        self.symbol = config_data.get('symbol', self.symbol)
+        self.required_food = config_data.get('required_food', self.required_food)
+        self.type = config_data.get('type', self.type)
+        self.genomes = config_data.get('genomes', self.genomes)
+        self.view_range = config_data.get('view_range', self.view_range)
+        self.smell = config_data.get('smell', self.view_range * 5)
+        self.stamina = config_data.get('stamina', self.stamina)
+        self.full_belly = config_data.get('full_belly', self.full_belly)
+        self.num_children = config_data.get('num_children', self.num_children)
+
     def get_type(self):
         return self.type
 
@@ -49,7 +71,14 @@ class Entity:
         return new_symbol == '.' or new_symbol == self.relations[self.symbol]
 
     def entity_search(self, map, entity_type):
-        entity_positions = [(self.x + dx, self.y + dy) for dx in
+        if self.food >= self.required_food:
+            entity_positions = [(self.x + dx, self.y + dy) for dx in
+                                range(-self.smell, self.smell + 1) for dy in
+                                range(-self.smell, self.smell + 1)
+                                if 0 <= self.x + dx < len(map[0]) and 0 <= self.y + dy < len(map) and
+                                map[self.y + dy][self.x + dx] == entity_type]
+        else:
+            entity_positions = [(self.x + dx, self.y + dy) for dx in
                             range(-self.view_range, self.view_range + 1) for dy in
                             range(-self.view_range, self.view_range + 1)
                             if 0 <= self.x + dx < len(map[0]) and 0 <= self.y + dy < len(map) and
@@ -173,7 +202,15 @@ class Entity:
         available_positions = self.get_available_neighbour_positions(map)
         if available_positions:
             new_x, new_y = random.choice(available_positions)
-            offspring = Entity(new_x, new_y, self.symbol, self.type, self.genomes, self.required_food, self.max_age)
-            self.food = 0
+            offspring = self.create_child(new_x,new_y)
+            self.food -= 1
             return offspring
         return None
+
+    def create_child(self,x,y):
+        entity = Entity(x, y)
+        entity.symbol = self.symbol
+        entity.type = self.type
+        entity.required_food = self.required_food
+        entity.max_age = self.max_age
+        return entity

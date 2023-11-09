@@ -125,7 +125,7 @@ class Map:
         win.blit(text, (map_width + 20, font_size * 6))
 
     def show_popup_window(self, win, entity_details):
-        popup_width = 1000
+        popup_width = 1600
         popup_height = len(entity_details) * 30 + 10
         popup_x = (self.width - popup_width) / 2
         popup_y = (self.height - popup_height) / 2
@@ -134,7 +134,7 @@ class Map:
         font = pygame.font.Font(None, 20)
         for i, detail in enumerate(entity_details):
             text = font.render(detail, True, (0, 0, 0))
-            win.blit(text, (popup_x + 20, popup_y + 10 + i * 10))
+            win.blit(text, (popup_x + 20, popup_y + 10 + i * 30))
 
     def draw_plants(self):
         for plant in self.plants:

@@ -1,6 +1,6 @@
 {
   "number_of_population": 20,
   "herbivores_percent": 0.5,
-  "carnivores_percent": 0.0,
+  "carnivores_percent": 0.1,
   "plant_population": 50
 }

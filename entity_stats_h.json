@@ -1,0 +1,14 @@
+{
+    "max_age": 100,
+    "min_reproductive_age": 0,
+    "max_reproductive_age": 0,
+    "symbol": "H",
+    "required_food": 1,
+    "type": "herbivore",
+    "genomes": {},
+    "view_range": 5,
+    "smell": 25,
+    "stamina": 0,
+    "full_belly": 0,
+    "num_children": 0
+}
