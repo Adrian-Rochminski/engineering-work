@@ -10,5 +10,9 @@
     "smell": 25,
     "stamina": 0,
     "full_belly": 0,
-    "num_children": 0
+    "belly_capacity": 3,
+    "max_stamina": 8,
+    "num_children": 0,
+    "resting_threshold": 4,
+    "weight": 20
 }

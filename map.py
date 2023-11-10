@@ -25,7 +25,8 @@ class Map:
             'up-left': (-1, -1),
             'up-right': (1, -1),
             'down-left': (-1, 1),
-            'down-right': (1, 1)
+            'down-right': (1, 1),
+            'stay': (0,0)
         }
 
     def add_entity(self, entity):
@@ -42,7 +43,7 @@ class Map:
                 self.grid[entity.y][entity.x] = '.'
                 self.entities.remove(entity)
             elif status and 'reproduce' in status:
-                self.entities.append(direction)
+                self.entities.extend(direction)
             else:
                 entity.age += 1
                 dx, dy = self.moves[direction]

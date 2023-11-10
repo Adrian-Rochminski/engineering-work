@@ -4,6 +4,9 @@ import random
 class Entity:
 
     def __init__(self, x, y):
+        self.resting_threshold = 0
+        self.rest = False
+        self.max_stamina = 0
         self.x = x
         self.y = y
         self.age = 1
@@ -21,6 +24,7 @@ class Entity:
         self.stamina = 0
         self.full_belly = 0
         self.num_children = 0
+        self.weight = 0
         self.moves = {
             'up': (0, -1),
             'down': (0, 1),
@@ -29,7 +33,8 @@ class Entity:
             'up-left': (-1, -1),
             'up-right': (1, -1),
             'down-left': (-1, 1),
-            'down-right': (1, 1)
+            'down-right': (1, 1),
+            'stay': (0,0)
         }
         self.relations = {
             'P': '-',
@@ -39,7 +44,10 @@ class Entity:
         self.statuses = {
             'death': None,
             'death_from_old_age': None,
-            'reproduce': None
+            'reproduce': None,
+            'not_reproductive': None,
+            'exhausted': None,
+            'resting': None
         }
 
     def update_fields(self, config_data):
@@ -51,10 +59,12 @@ class Entity:
         self.type = config_data.get('type', self.type)
         self.genomes = config_data.get('genomes', self.genomes)
         self.view_range = config_data.get('view_range', self.view_range)
-        self.smell = config_data.get('smell', self.view_range * 5)
+        self.smell = config_data.get('smell', self.smell)
         self.stamina = config_data.get('stamina', self.stamina)
         self.full_belly = config_data.get('full_belly', self.full_belly)
         self.num_children = config_data.get('num_children', self.num_children)
+        self.max_stamina = config_data.get('max_stamina', self.max_stamina)
+        self.resting_threshold = config_data.get('resting_threshold', self.resting_threshold)
 
     def get_type(self):
         return self.type
@@ -62,6 +72,13 @@ class Entity:
     def check_status(self):
         if self.age >= self.max_age:
             return 'death_from_old_age'
+        if self.age < self.min_reproductive_age or self.age > self.max_reproductive_age:
+            return 'not_reproductive'
+        if self.stamina == 0:
+            self.rest = True
+            return 'exhausted'
+        if self.rest:
+            return 'resting'
         return None
 
     def is_move_possible(self, dx, dy, mapa):
@@ -79,10 +96,10 @@ class Entity:
                                 map[self.y + dy][self.x + dx] == entity_type]
         else:
             entity_positions = [(self.x + dx, self.y + dy) for dx in
-                            range(-self.view_range, self.view_range + 1) for dy in
-                            range(-self.view_range, self.view_range + 1)
-                            if 0 <= self.x + dx < len(map[0]) and 0 <= self.y + dy < len(map) and
-                            map[self.y + dy][self.x + dx] == entity_type]
+                                range(-self.view_range, self.view_range + 1) for dy in
+                                range(-self.view_range, self.view_range + 1)
+                                if 0 <= self.x + dx < len(map[0]) and 0 <= self.y + dy < len(map) and
+                                map[self.y + dy][self.x + dx] == entity_type]
 
         if entity_positions:
             entity_positions.sort(key=lambda pos: abs(pos[0] - self.x) + abs(pos[1] - self.y))
@@ -93,8 +110,13 @@ class Entity:
 
     def decide_action(self, map):
         status = self.check_status()
-        if status:
+        print("ssssssssssssssssssssssssssssssssssssssssssss")
+        print(status)
+        if status and 'death_from_old_age' in status:
             return None, 'death_from_old_age'
+        if status and ('exhausted' in status or 'resting' in status):
+            self.rest_entity()
+            return 'stay', None
         if self.is_ready_to_reproduce():
             mate_position = self.find_nearest_mate(map)
             if mate_position:
@@ -120,10 +142,12 @@ class Entity:
             # print("@" + (enemies) + "@")
             print("##############")
             if not enemies or food[0] < min(enemy[0] for enemy in enemies):
+                self.decrement_stamina()
                 return self.get_direction_to_entity(food[1]), None
         elif enemies:
+            self.decrement_stamina()
             return self.get_opposite_direction(min(enemies, key=lambda x: x[0])[1]), None
-
+        self.rest_entity()
         return self.random_move(map), None
 
     def random_move(self, map):
@@ -171,7 +195,8 @@ class Entity:
                 return random.choice(possible_moves)
 
     def is_ready_to_reproduce(self):
-        return self.food >= self.required_food
+        return (self.min_reproductive_age <= self.age <= self.max_reproductive_age) and \
+            self.food >= self.required_food
 
     def find_nearest_mate(self, map):
         same_type_entities = self.entity_search(map, self.symbol)
@@ -197,20 +222,39 @@ class Entity:
         return False
 
     def reproduce(self, map):
-        if not self.is_neighbour_with_same_type(map):
-            return None
-        available_positions = self.get_available_neighbour_positions(map)
-        if available_positions:
-            new_x, new_y = random.choice(available_positions)
-            offspring = self.create_child(new_x,new_y)
-            self.food -= 1
-            return offspring
+        if self.is_neighbour_with_same_type(map):
+            available_positions = self.get_available_neighbour_positions(map)
+            offspring_list = []
+            for _ in range(min(self.num_children, len(available_positions))):
+                new_x, new_y = random.choice(available_positions)
+                available_positions.remove((new_x, new_y))
+                offspring = self.create_child(new_x, new_y)
+                offspring_list.append(offspring)
+            self.food -= self.required_food
+            self.full_belly = 0
+            return offspring_list
         return None
 
-    def create_child(self,x,y):
+    def create_child(self, x, y):
         entity = Entity(x, y)
         entity.symbol = self.symbol
         entity.type = self.type
         entity.required_food = self.required_food
         entity.max_age = self.max_age
+        entity.generation += 1
         return entity
+
+    def decrement_full_belly(self):
+        if self.full_belly > 0:
+            self.full_belly -= 1
+
+    def decrement_stamina(self):
+        if self.stamina > 0:
+            self.stamina -= 1
+
+    def rest_entity(self):
+        self.stamina +=1
+        if self.stamina >= self.resting_threshold:
+            self.rest = False
+    def is_hungry(self):
+        return self.food < self.required_food and self.full_belly == 0
