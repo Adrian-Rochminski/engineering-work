@@ -1,10 +1,17 @@
 from map import Map
-from Entities_generation import generate_population
+import Entities_generation
+
+game_map = None
+
+
+def initialize_map():
+    global game_map
+    entities_population, plant_population = Entities_generation.generate_population()
+    game_map = Map(100, 100, entities_population, plant_population)
 
 
 def main():
-    entities_population, plant_population = generate_population()
-    game_map = Map(100, 100, entities_population, plant_population)
+    initialize_map()
     game_map.display()
 
 

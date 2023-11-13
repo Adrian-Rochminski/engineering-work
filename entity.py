@@ -1,4 +1,12 @@
 import random
+import genetic_algorithms as ga
+import entity_performance
+
+def find_entity_by_position(x, y, another_entities):
+    for entity in another_entities:
+        if entity.x == x and entity.y == y:
+            return entity
+    return None
 
 
 class Entity:
@@ -34,7 +42,7 @@ class Entity:
             'up-right': (1, -1),
             'down-left': (-1, 1),
             'down-right': (1, 1),
-            'stay': (0,0)
+            'stay': (0, 0)
         }
         self.relations = {
             'P': '-',
@@ -47,17 +55,27 @@ class Entity:
             'reproduce': None,
             'not_reproductive': None,
             'exhausted': None,
+            'full_belly': None,
             'resting': None
         }
+        self.statistic = entity_performance.Stats()
 
-    def update_fields(self, config_data):
+    def update_statistic(self, food, tick, children, food_processed, death_cause, survived_till_end):
+        self.statistic.death_cause = death_cause
+        self.statistic.children += children
+        self.statistic.food_processed += food_processed
+        self.statistic.survived_till_end = survived_till_end
+        self.statistic.collected_food += food
+        self.statistic.age_survived += tick
+
+    def update_fields(self, config_data, genomes):
         self.max_age = config_data.get('max_age', self.max_age)
         self.min_reproductive_age = config_data.get('min_reproductive_age', self.min_reproductive_age)
         self.max_reproductive_age = config_data.get('max_reproductive_age', self.max_reproductive_age)
         self.symbol = config_data.get('symbol', self.symbol)
         self.required_food = config_data.get('required_food', self.required_food)
         self.type = config_data.get('type', self.type)
-        self.genomes = config_data.get('genomes', self.genomes)
+        self.genomes = genomes
         self.view_range = config_data.get('view_range', self.view_range)
         self.smell = config_data.get('smell', self.smell)
         self.stamina = config_data.get('stamina', self.stamina)
@@ -72,13 +90,13 @@ class Entity:
     def check_status(self):
         if self.age >= self.max_age:
             return 'death_from_old_age'
-        if self.age < self.min_reproductive_age or self.age > self.max_reproductive_age:
-            return 'not_reproductive'
         if self.stamina == 0:
             self.rest = True
             return 'exhausted'
         if self.rest:
             return 'resting'
+        if self.age < self.min_reproductive_age or self.age > self.max_reproductive_age:
+            return 'not_reproductive'
         return None
 
     def is_move_possible(self, dx, dy, mapa):
@@ -108,7 +126,7 @@ class Entity:
             return distance, closest_entity
         return None
 
-    def decide_action(self, map):
+    def decide_action(self, map, another_entities):
         status = self.check_status()
         print("ssssssssssssssssssssssssssssssssssssssssssss")
         print(status)
@@ -123,7 +141,7 @@ class Entity:
                 direction_to_mate = self.get_direction_to_entity(mate_position)
                 distance_to_mate = abs(mate_position[0] - self.x) + abs(mate_position[1] - self.y)
                 if distance_to_mate == 1:
-                    offspring = self.reproduce(map)
+                    offspring = self.reproduce(map, another_entities)
                     if offspring:
                         return offspring, 'reproduce'
                 return direction_to_mate, None
@@ -141,8 +159,8 @@ class Entity:
             print(self.get_direction_to_entity(food[1]))
             # print("@" + (enemies) + "@")
             print("##############")
+            self.decrement_stamina()
             if not enemies or food[0] < min(enemy[0] for enemy in enemies):
-                self.decrement_stamina()
                 return self.get_direction_to_entity(food[1]), None
         elif enemies:
             self.decrement_stamina()
@@ -184,8 +202,8 @@ class Entity:
         elif direction == 'down-right':
             return 'up-left'
 
-    def make_a_move(self, mapa):
-        action = self.decide_action(mapa)
+    def make_a_move(self, mapa, another_entities):
+        action = self.decide_action(mapa, another_entities)
 
         if action:
             return action
@@ -218,30 +236,41 @@ class Entity:
             new_x = self.x + dx
             new_y = self.y + dy
             if 0 <= new_x < len(map[0]) and 0 <= new_y < len(map) and map[new_y][new_x] == self.symbol:
-                return True
-        return False
+                return True, (new_x, new_y)
+        return False, None
 
-    def reproduce(self, map):
-        if self.is_neighbour_with_same_type(map):
+    def reproduce(self, map, another_entities):
+        neighbour_exist, position = self.is_neighbour_with_same_type(map)
+        if neighbour_exist:
+            neighbour_entity = find_entity_by_position(position[0], position[1], another_entities)
             available_positions = self.get_available_neighbour_positions(map)
             offspring_list = []
             for _ in range(min(self.num_children, len(available_positions))):
                 new_x, new_y = random.choice(available_positions)
                 available_positions.remove((new_x, new_y))
-                offspring = self.create_child(new_x, new_y)
+                offspring = self.create_child(new_x, new_y, neighbour_entity)
                 offspring_list.append(offspring)
             self.food -= self.required_food
             self.full_belly = 0
             return offspring_list
         return None
 
-    def create_child(self, x, y):
+    def update_entity_with_genomes(self, entity, genomes):
+        for key, value in genomes.items():
+            if hasattr(entity, key):
+                value = value.replace('b', '')
+                numeric_value = int(value, 2)
+                setattr(entity, key, numeric_value)
+        return entity
+
+    def create_child(self, x, y, neighbour_entity):
         entity = Entity(x, y)
+        new_children_genomes = ga.evolution(self.genomes, neighbour_entity.genomes)
+        entity = self.update_entity_with_genomes(entity, new_children_genomes)
+        entity.genomes = new_children_genomes
         entity.symbol = self.symbol
         entity.type = self.type
-        entity.required_food = self.required_food
-        entity.max_age = self.max_age
-        entity.generation += 1
+        entity.generation = self.generation + 1
         return entity
 
     def decrement_full_belly(self):
@@ -253,8 +282,10 @@ class Entity:
             self.stamina -= 1
 
     def rest_entity(self):
-        self.stamina +=1
+        if self.stamina < self.max_stamina:
+            self.stamina += 1
         if self.stamina >= self.resting_threshold:
             self.rest = False
+
     def is_hungry(self):
         return self.food < self.required_food and self.full_belly == 0

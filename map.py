@@ -1,6 +1,4 @@
 import pygame
-import random
-from entity import Entity
 import matplotlib.pyplot as plt
 import button
 
@@ -13,6 +11,7 @@ class Map:
         self.height = height
         self.grid = [['.' for _ in range(width)] for _ in range(height)]
         self.entities = entities
+        self.genome_statistics = []
         self.entity_distribution = []
         self.plants = plants
         self.game_ticks = 0
@@ -26,7 +25,7 @@ class Map:
             'up-right': (1, -1),
             'down-left': (-1, 1),
             'down-right': (1, 1),
-            'stay': (0,0)
+            'stay': (0, 0)
         }
 
     def add_entity(self, entity):
@@ -36,13 +35,17 @@ class Map:
     def update(self):
         for entity in self.entities:
             self.grid[entity.y][entity.x] = '.'
-
-            direction, status = entity.make_a_move(self.grid)
+            food = children = food_processed = 0
+            # think about it(for statistic)
+            death_cause = ""
+            direction, status = entity.make_a_move(self.grid, self.entities)
             print(direction)
+
             if status and 'death' in status:
                 self.grid[entity.y][entity.x] = '.'
                 self.entities.remove(entity)
             elif status and 'reproduce' in status:
+                children += len(direction)
                 self.entities.extend(direction)
             else:
                 entity.age += 1
@@ -62,6 +65,7 @@ class Map:
                     self.plants = list(filter(lambda plant: plant.x != entity.x or plant.y != entity.y, self.plants))
                     self.grid[entity.y][entity.x] = '.'
                     entity.food += 1
+                    food = 1
                 elif entity.get_type() == 'carnivore':
                     herbivore_on_position = next(
                         (e for e in self.entities if
@@ -71,9 +75,12 @@ class Map:
                         self.entities.remove(herbivore_on_position)
                         self.grid[entity.y][entity.x] = '.'
                         entity.food += 1
+                        food = 1
 
                 print(str(entity.y) + " " + str(entity.x))
+                entity.update_statistic(food, 1, children, food_processed, "", False)
                 self.grid[entity.y][entity.x] = entity.symbol
+                self.store_genome_statistics(entity)
         self.count_important_data()
 
     def count_important_data(self):
@@ -82,6 +89,37 @@ class Map:
         carnivores = entity_types.count('carnivore')
         self.entity_distribution.append((herbivores, carnivores, len(self.plants)))
         self.game_ticks += 1
+
+    def show_genome_statistics(self):
+        if not self.genome_statistics:
+            print("No genome statistics available.")
+            return
+
+        plt.figure()
+        for key in self.genome_statistics[0].keys():
+            plt.plot([tick[key] for tick in self.genome_statistics], label=key)
+
+        plt.legend()
+        plt.xlabel("Ticks")
+        plt.ylabel("Average Genome Value")
+        plt.title("Genome Statistics Over Time")
+        plt.show()
+
+    def store_genome_statistics(self,entity):
+        if not self.entities:
+            return
+        total_genomes = {}
+        for key, value in entity.genomes.items():
+            if isinstance(value, (int, float)):
+                if key not in total_genomes:
+                    total_genomes[key] = 0
+                total_genomes[key] += value
+
+        if not total_genomes:
+            return
+
+        avg_genomes = {key: value / len(self.entities) for key, value in total_genomes.items()}
+        self.genome_statistics.append(avg_genomes)
 
     def draw_grid(self, win, map_width, map_height):
         for i in range(self.height):
@@ -143,8 +181,8 @@ class Map:
 
     def create_buttons(self, map_width, font_size):
         self.buttons = []
-        button_texts = ["Instances", "Check entities", "Pause"]
-        button_actions = [self.show_plot, None, self.toggle_pause]
+        button_texts = ["Instances", "Check Statistics", "Pause", "Show Genome Stats"]
+        button_actions = [self.show_plot, None, self.toggle_pause, self.show_genome_statistics]
 
         y_pos = font_size * 7
         self.button_size = (map_width - 40, font_size * 2)

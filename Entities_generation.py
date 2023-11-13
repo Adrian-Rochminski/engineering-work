@@ -27,6 +27,15 @@ def read_conf():
     return number_of_population, herbivores, carnivores, number_of_plants
 
 
+def convert_to_binary(json_data):
+    binary_data = {}
+    for key, value in json_data.items():
+        if key not in ["genomes", "symbol", "type"]:
+            if isinstance(value, (int, float)):
+                binary_data[key] = bin(value)
+    return binary_data
+
+
 def generate_population():
     number_of_population, herbivores, carnivores, number_of_plants = read_conf()
     positions = [(x, y) for x in range(100) for y in range(100)]
@@ -37,7 +46,7 @@ def generate_population():
     def create_entity(conf):
         x, y = positions.pop()
         entity = Entity(x, y)
-        entity.update_fields(conf)
+        entity.update_fields(conf, convert_to_binary(conf))
         return entity
 
     def create_plant():
