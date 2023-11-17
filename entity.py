@@ -2,6 +2,7 @@ import random
 import genetic_algorithms as ga
 import entity_performance
 
+
 def find_entity_by_position(x, y, another_entities):
     for entity in another_entities:
         if entity.x == x and entity.y == y:
@@ -12,6 +13,7 @@ def find_entity_by_position(x, y, another_entities):
 class Entity:
 
     def __init__(self, x, y):
+        self.belly_capacity = 0
         self.resting_threshold = 0
         self.rest = False
         self.max_stamina = 0
@@ -80,6 +82,7 @@ class Entity:
         self.smell = config_data.get('smell', self.smell)
         self.stamina = config_data.get('stamina', self.stamina)
         self.full_belly = config_data.get('full_belly', self.full_belly)
+        self.belly_capacity = config_data.get("belly_capacity", self.belly_capacity)
         self.num_children = config_data.get('num_children', self.num_children)
         self.max_stamina = config_data.get('max_stamina', self.max_stamina)
         self.resting_threshold = config_data.get('resting_threshold', self.resting_threshold)
@@ -90,11 +93,16 @@ class Entity:
     def check_status(self):
         if self.age >= self.max_age:
             return 'death_from_old_age'
+        if self.died_from_starvation():
+            return 'death_by_starvation'
         if self.stamina == 0:
             self.rest = True
             return 'exhausted'
         if self.rest:
             return 'resting'
+        if not self.is_hungry():
+            return 'full_belly'
+
         if self.age < self.min_reproductive_age or self.age > self.max_reproductive_age:
             return 'not_reproductive'
         return None
@@ -128,11 +136,10 @@ class Entity:
 
     def decide_action(self, map, another_entities):
         status = self.check_status()
-        print("ssssssssssssssssssssssssssssssssssssssssssss")
         print(status)
-        if status and 'death_from_old_age' in status:
-            return None, 'death_from_old_age'
-        if status and ('exhausted' in status or 'resting' in status):
+        if status and 'death' in status:
+            return None, status
+        if status and ('exhausted' in status or 'resting' in status or 'full_belly' in status):
             self.rest_entity()
             return 'stay', None
         if self.is_ready_to_reproduce():
@@ -155,16 +162,17 @@ class Entity:
         print(self.type)
         print(food)
         print(enemies)
+        print("#################")
         if food:
-            print(self.get_direction_to_entity(food[1]))
-            # print("@" + (enemies) + "@")
-            print("##############")
             self.decrement_stamina()
+            self.energy_loss()
             if not enemies or food[0] < min(enemy[0] for enemy in enemies):
                 return self.get_direction_to_entity(food[1]), None
         elif enemies:
             self.decrement_stamina()
+            self.energy_loss()
             return self.get_opposite_direction(min(enemies, key=lambda x: x[0])[1]), None
+        self.energy_loss()
         self.rest_entity()
         return self.random_move(map), None
 
@@ -286,6 +294,23 @@ class Entity:
             self.stamina += 1
         if self.stamina >= self.resting_threshold:
             self.rest = False
+        if self.full_belly > 0:
+            self.full_belly -= 1
 
     def is_hungry(self):
-        return self.food < self.required_food and self.full_belly == 0
+        return self.full_belly < self.belly_capacity
+
+    def died_from_starvation(self):
+        if self.food <= 0:
+            return True
+        return False
+
+    def energy_loss(self):
+        base_cost = 1
+        age_weight_factor = (self.age / 10) + (self.weight / 5)
+        if self.full_belly > 0:
+            base_cost *= 0.9
+        if self.stamina < self.max_stamina / 2:
+            base_cost *= 1.2
+        total_cost = base_cost + age_weight_factor
+        self.food -= total_cost
