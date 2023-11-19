@@ -1,10 +1,12 @@
 import random
 from entity import Entity
+from plants import Plants
 import json
 
 config_file = "conf_file.json"
 entity_stats_h = "entity_stats_h.json"
 entity_stats_c = "entity_stats_c.json"
+plants_stats = "plants_stats.json"
 
 
 def read_entity(file_path):
@@ -42,6 +44,7 @@ def generate_population():
     random.shuffle(positions)
     herbivores_stats = read_entity(entity_stats_h)
     carnivore_stats = read_entity(entity_stats_c)
+    plant_stats = read_entity(plants_stats)
 
     def create_entity(conf):
         x, y = positions.pop()
@@ -49,17 +52,16 @@ def generate_population():
         entity.update_fields(conf, convert_to_binary(conf))
         return entity
 
-    def create_plant():
+    def create_plant(conf):
         x, y = positions.pop()
-        entity = Entity(x, y)
-        entity.type = 'plant'
-        entity.symbol = 'P'
-        return entity
+        plant = Plants(x, y)
+        plant.init_from_json(conf)
+        return plant
 
     population = [create_entity(herbivores_stats) for _ in range(herbivores)]
     population.extend(create_entity(carnivore_stats) for _ in range(carnivores))
 
-    plants = [create_plant() for _ in range(number_of_plants)]
+    plants = [create_plant(plant_stats) for _ in range(number_of_plants)]
 
     return population, plants
 

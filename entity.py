@@ -1,12 +1,14 @@
 import random
 import genetic_algorithms as ga
 import entity_performance
+import numpy as np
 
 
 def find_entity_by_position(x, y, another_entities):
-    for entity in another_entities:
-        if entity.x == x and entity.y == y:
-            return entity
+    positions = np.array([(entity.x, entity.y) for entity in another_entities])
+    matching_indices = np.where((positions[:, 0] == x) & (positions[:, 1] == y))[0]
+    if matching_indices.size > 0:
+        return another_entities[matching_indices[0]]
     return None
 
 
@@ -25,7 +27,7 @@ class Entity:
         self.min_reproductive_age = 0
         self.max_reproductive_age = 0
         self.symbol = ""
-        self.food = 1
+        self.food = 100
         self.required_food = 0
         self.type = ""
         self.genomes = {}
@@ -115,17 +117,17 @@ class Entity:
 
     def entity_search(self, map, entity_type):
         if self.food >= self.required_food:
-            entity_positions = [(self.x + dx, self.y + dy) for dx in
-                                range(-self.smell, self.smell + 1) for dy in
-                                range(-self.smell, self.smell + 1)
-                                if 0 <= self.x + dx < len(map[0]) and 0 <= self.y + dy < len(map) and
-                                map[self.y + dy][self.x + dx] == entity_type]
+            entity_positions = np.argwhere((self.x - self.smell <= np.arange(len(map))) &
+                                           (self.x + self.smell >= np.arange(len(map)))[:, np.newaxis] &
+                                           (self.y - self.smell <= np.arange(len(map[0]))) &
+                                           (self.y + self.smell >= np.arange(len(map[0]))) &
+                                           (map == entity_type))
         else:
-            entity_positions = [(self.x + dx, self.y + dy) for dx in
-                                range(-self.view_range, self.view_range + 1) for dy in
-                                range(-self.view_range, self.view_range + 1)
-                                if 0 <= self.x + dx < len(map[0]) and 0 <= self.y + dy < len(map) and
-                                map[self.y + dy][self.x + dx] == entity_type]
+            entity_positions = np.argwhere((self.x - self.view_range <= np.arange(len(map))) &
+                                           (self.x + self.view_range >= np.arange(len(map)))[:, np.newaxis] &
+                                           (self.y - self.view_range <= np.arange(len(map[0]))) &
+                                           (self.y + self.view_range >= np.arange(len(map[0]))) &
+                                           (map == entity_type))
 
         if entity_positions:
             entity_positions.sort(key=lambda pos: abs(pos[0] - self.x) + abs(pos[1] - self.y))
@@ -313,4 +315,5 @@ class Entity:
         if self.stamina < self.max_stamina / 2:
             base_cost *= 1.2
         total_cost = base_cost + age_weight_factor
+        print("####" + str(total_cost) + "######")
         self.food -= total_cost

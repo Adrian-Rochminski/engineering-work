@@ -3,7 +3,7 @@
     "min_reproductive_age": 60,
     "max_reproductive_age": 600,
     "symbol": "H",
-    "required_food": 5,
+    "required_food": 500,
     "type": "herbivore",
     "genomes": {},
     "view_range": 12,

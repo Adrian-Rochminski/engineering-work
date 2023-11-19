@@ -1,0 +1,13 @@
+{
+  "max_age": 10000,
+  "start_reproduce_age": 100,
+  "biomass": 1,
+  "nutrients_level": 0,
+  "number_of_seeds": 10,
+  "chance_of_seed_surviving": 40,
+  "seeds_range": 1,
+  "growth_rate": 0,
+  "water_content": 0,
+  "reproduction_frequency": 10
+
+}

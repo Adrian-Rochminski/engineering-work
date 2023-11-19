@@ -3,7 +3,7 @@
     "min_reproductive_age": 50,
     "max_reproductive_age": 600,
     "symbol": "C",
-    "required_food": 3,
+    "required_food": 300,
     "type": "carnivore",
     "genomes": {},
     "view_range": 10,

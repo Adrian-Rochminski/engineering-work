@@ -1,3 +1,5 @@
+import time
+
 import pygame
 import matplotlib.pyplot as plt
 import button
@@ -33,6 +35,15 @@ class Map:
         self.grid[entity.y][entity.x] = entity.symbol
 
     def update(self):
+        start = time.time()
+        self.update_entities()
+        elapsed_time = time.time() - start
+        print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+        print(elapsed_time)
+        print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+        self.update_plants()
+
+    def update_entities(self):
         for entity in self.entities:
             self.grid[entity.y][entity.x] = '.'
             food = children = food_processed = 0
@@ -83,6 +94,23 @@ class Map:
                 self.store_genome_statistics(entity)
         self.count_important_data()
 
+    def count_P_occurrences(self):
+        count = 0
+        for row in self.grid:
+            for char in row:
+                if char == 'P':
+                    count += 1
+        return count
+    def update_plants(self):
+        samplings = []
+        for plant in self.plants:
+            output = plant.grow(self.grid, self.game_ticks)
+            if output:
+                for new_plant in output:
+                    self.grid[new_plant.y][new_plant.x] = 'P'
+                samplings.extend(output)
+        print("))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))" + str(self.count_P_occurrences()))
+        self.plants.extend(samplings)
     def count_important_data(self):
         entity_types = [e.get_type() for e in self.entities]
         herbivores = entity_types.count('herbivore')
