@@ -6,7 +6,7 @@
     "required_food": 500,
     "type": "herbivore",
     "genomes": {},
-    "view_range": 12,
+    "view_range": 5,
     "smell": 15,
     "stamina": 7,
     "full_belly": 0,

@@ -117,17 +117,17 @@ class Entity:
 
     def entity_search(self, map, entity_type):
         if self.food >= self.required_food:
-            entity_positions = np.argwhere((self.x - self.smell <= np.arange(len(map))) &
-                                           (self.x + self.smell >= np.arange(len(map)))[:, np.newaxis] &
-                                           (self.y - self.smell <= np.arange(len(map[0]))) &
-                                           (self.y + self.smell >= np.arange(len(map[0]))) &
-                                           (map == entity_type))
+            entity_positions = [(self.x + dx, self.y + dy) for dx in
+                                range(-self.smell, self.smell + 1) for dy in
+                                range(-self.smell, self.smell + 1)
+                                if 0 <= self.x + dx < len(map[0]) and 0 <= self.y + dy < len(map) and
+                                map[self.y + dy][self.x + dx] == entity_type]
         else:
-            entity_positions = np.argwhere((self.x - self.view_range <= np.arange(len(map))) &
-                                           (self.x + self.view_range >= np.arange(len(map)))[:, np.newaxis] &
-                                           (self.y - self.view_range <= np.arange(len(map[0]))) &
-                                           (self.y + self.view_range >= np.arange(len(map[0]))) &
-                                           (map == entity_type))
+            entity_positions = [(self.x + dx, self.y + dy) for dx in
+                                range(-self.view_range, self.view_range + 1) for dy in
+                                range(-self.view_range, self.view_range + 1)
+                                if 0 <= self.x + dx < len(map[0]) and 0 <= self.y + dy < len(map) and
+                                map[self.y + dy][self.x + dx] == entity_type]
 
         if entity_positions:
             entity_positions.sort(key=lambda pos: abs(pos[0] - self.x) + abs(pos[1] - self.y))
@@ -166,9 +166,9 @@ class Entity:
         print(enemies)
         print("#################")
         if food:
-            self.decrement_stamina()
-            self.energy_loss()
             if not enemies or food[0] < min(enemy[0] for enemy in enemies):
+                self.decrement_stamina()
+                self.energy_loss()
                 return self.get_direction_to_entity(food[1]), None
         elif enemies:
             self.decrement_stamina()

@@ -109,7 +109,7 @@ class Map:
                 for new_plant in output:
                     self.grid[new_plant.y][new_plant.x] = 'P'
                 samplings.extend(output)
-        print("))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))" + str(self.count_P_occurrences()))
+        #print("))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))" + str(self.count_P_occurrences()))
         self.plants.extend(samplings)
     def count_important_data(self):
         entity_types = [e.get_type() for e in self.entities]
