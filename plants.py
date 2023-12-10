@@ -12,6 +12,7 @@ class Plants:
         self.age = 1
         self.nutrients_level = 0
         self.number_of_seeds = 0
+        self.start_reproduce_age = 100
         self.chance_of_seed_surviving = 10
         self.seeds_range = 0
         self.growth_rate = 0
@@ -20,26 +21,26 @@ class Plants:
         self.generation = 1
         self.genomes = {}
 
-    def grow(self, map, time):
-
+    def grow(self, map, time, environment_data):
         self.age += 1
         try:
-            if time % self.reproduction_frequency == 0:
+            if time % self.reproduction_frequency == 0 and time >= self.start_reproduce_age:
                 return self.reproduce(map)
             else:
-                self.photosynthesize(0)
-                self.absorb_food(0, 0)
+                self.photosynthesize(environment_data.light_intensity)
+                self.absorb_food(environment_data.nutrients_in_field, environment_data.water_in_field)
                 return None
-        except Exception:
+        except Exception as e:
+            print(e)
             return None
 
     def photosynthesize(self, light_intensity):
-        photosynthesis_rate = 0.1
+        photosynthesis_rate = 0.001
         self.biomass += photosynthesis_rate * light_intensity
 
     def absorb_food(self, available_nutrients, available_water):
-        nutrient_absorption_rate = 0.05
-        water_absorption_rate = 0.03
+        nutrient_absorption_rate = 0.005
+        water_absorption_rate = 0.003
 
         self.biomass += nutrient_absorption_rate * available_nutrients
         self.water_content += water_absorption_rate * available_water

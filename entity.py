@@ -316,4 +316,4 @@ class Entity:
             base_cost *= 1.2
         total_cost = base_cost + age_weight_factor
         print("####" + str(total_cost) + "######")
-        self.food -= total_cost
+        self.food -= 1

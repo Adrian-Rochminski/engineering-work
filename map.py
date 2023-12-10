@@ -1,5 +1,6 @@
+import concurrent.futures
 import time
-
+import environment
 import pygame
 import matplotlib.pyplot as plt
 import button
@@ -7,6 +8,7 @@ import button
 
 class Map:
     def __init__(self, width, height, entities, plants):
+        self.environment = environment.EnvironmentSimulator()
         self.buttons = None
         self.button_size = None
         self.width = width
@@ -29,6 +31,7 @@ class Map:
             'down-right': (1, 1),
             'stay': (0, 0)
         }
+        self.environment.load_from_json()
 
     def add_entity(self, entity):
         self.entities.append(entity)
@@ -36,12 +39,30 @@ class Map:
 
     def update(self):
         start = time.time()
-        self.update_entities()
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [executor.submit(self.update_entities), executor.submit(self.update_plants)]
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
         elapsed_time = time.time() - start
-        print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+        print(
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
         print(elapsed_time)
-        print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+        print(
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+        self.count_important_data()
+        self.environment.environment_change()
+
+    def update1(self):
+        start = time.time()
+        self.update_entities()
         self.update_plants()
+        elapsed_time = time.time() - start
+        print(
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+        print(elapsed_time)
+        print(
+            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+
 
     def update_entities(self):
         for entity in self.entities:
@@ -92,7 +113,6 @@ class Map:
                 entity.update_statistic(food, 1, children, food_processed, "", False)
                 self.grid[entity.y][entity.x] = entity.symbol
                 self.store_genome_statistics(entity)
-        self.count_important_data()
 
     def count_P_occurrences(self):
         count = 0
@@ -101,16 +121,17 @@ class Map:
                 if char == 'P':
                     count += 1
         return count
+
     def update_plants(self):
         samplings = []
         for plant in self.plants:
-            output = plant.grow(self.grid, self.game_ticks)
+            output = plant.grow(self.grid, self.game_ticks,self.environment)
             if output:
                 for new_plant in output:
                     self.grid[new_plant.y][new_plant.x] = 'P'
                 samplings.extend(output)
-        #print("))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))" + str(self.count_P_occurrences()))
         self.plants.extend(samplings)
+
     def count_important_data(self):
         entity_types = [e.get_type() for e in self.entities]
         herbivores = entity_types.count('herbivore')
@@ -133,7 +154,7 @@ class Map:
         plt.title("Genome Statistics Over Time")
         plt.show()
 
-    def store_genome_statistics(self,entity):
+    def store_genome_statistics(self, entity):
         if not self.entities:
             return
         total_genomes = {}

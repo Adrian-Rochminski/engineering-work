@@ -23,6 +23,16 @@ def selection(gen1, gen2):
     return gen1 if fitness1 > fitness2 else gen2
 
 
+def fitness(entity):
+    weight_for_survival = 3.0
+    weight_for_food = 2.0
+    weight_for_reproduction = 1.5
+
+    fitness = (weight_for_survival * entity.age +
+               weight_for_food * entity.statistic.collected_food)
+    return fitness
+
+
 def mutation(genotype):
     mutation_rate = 0.1
     mutated_genotype = {}
