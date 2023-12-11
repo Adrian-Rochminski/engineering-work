@@ -4,7 +4,7 @@ import environment
 import pygame
 import matplotlib.pyplot as plt
 import button
-
+import data_saving_logic
 
 class Map:
     def __init__(self, width, height, entities, plants):
@@ -51,18 +51,6 @@ class Map:
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
         self.count_important_data()
         self.environment.environment_change()
-
-    def update1(self):
-        start = time.time()
-        self.update_entities()
-        self.update_plants()
-        elapsed_time = time.time() - start
-        print(
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
-        print(elapsed_time)
-        print(
-            "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
-
 
     def update_entities(self):
         for entity in self.entities:
@@ -230,8 +218,8 @@ class Map:
 
     def create_buttons(self, map_width, font_size):
         self.buttons = []
-        button_texts = ["Instances", "Check Statistics", "Pause", "Show Genome Stats"]
-        button_actions = [self.show_plot, None, self.toggle_pause, self.show_genome_statistics]
+        button_texts = ["Instances", "Save Data", "Pause", "Show Genome Stats"]
+        button_actions = [self.show_plot, self.save_data, self.toggle_pause, self.show_genome_statistics]
 
         y_pos = font_size * 7
         self.button_size = (map_width - 40, font_size * 2)
@@ -257,6 +245,12 @@ class Map:
                 if button.action:
                     button.action()
                 return
+
+    def save_data(self):
+        print("Data saved")
+        data_saving_logic.save_to_csv(self.entity_distribution)
+        data_saving_logic.save_generation_data_to_csv(self.entities)
+
 
     def display(self):
         pygame.init()

@@ -37,6 +37,7 @@ class Entity:
         self.full_belly = 0
         self.num_children = 0
         self.weight = 0
+        self.time_to_reproduce = 0
         self.moves = {
             'up': (0, -1),
             'down': (0, 1),
@@ -223,8 +224,10 @@ class Entity:
                 return random.choice(possible_moves)
 
     def is_ready_to_reproduce(self):
+        if self.time_to_reproduce > 0:
+            self.time_to_reproduce -= 1
         return (self.min_reproductive_age <= self.age <= self.max_reproductive_age) and \
-            self.food >= self.required_food
+            self.food > self.required_food and self.time_to_reproduce == 0
 
     def find_nearest_mate(self, map):
         same_type_entities = self.entity_search(map, self.symbol)
@@ -262,6 +265,7 @@ class Entity:
                 offspring_list.append(offspring)
             self.food -= self.required_food
             self.full_belly = 0
+            self.time_to_reproduce += 50
             return offspring_list
         return None
 
@@ -275,7 +279,7 @@ class Entity:
 
     def create_child(self, x, y, neighbour_entity):
         entity = Entity(x, y)
-        new_children_genomes = ga.evolution(self.genomes, neighbour_entity.genomes)
+        new_children_genomes = ga.evolution(self.genomes, neighbour_entity.genomes, self, neighbour_entity)
         entity = self.update_entity_with_genomes(entity, new_children_genomes)
         entity.genomes = new_children_genomes
         entity.symbol = self.symbol

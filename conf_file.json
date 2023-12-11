@@ -1,5 +1,5 @@
 {
-  "number_of_population": 50,
+  "number_of_population": 10,
   "herbivores_percent": 0.5,
   "carnivores_percent": 0.2,
   "plant_population": 50

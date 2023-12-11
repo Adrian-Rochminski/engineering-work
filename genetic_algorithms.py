@@ -10,17 +10,20 @@ def convert_to_decimal(binary_string):
     return int(binary_string, 2)
 
 
-def evolution(gen1, gen2):
-    offspring_genotype = selection(gen1, gen2)
-    offspring_genotype = crossover(offspring_genotype, random.choice([gen1, gen2]))
-    mutated_offspring_genotype = mutation(offspring_genotype)
+def evolution(gen1, gen2, entity1, entity2):
+    try:
+        offspring_genotype = selection(entity1, entity2)
+        offspring_genotype = crossover(offspring_genotype, random.choice([gen1, gen2]))
+        mutated_offspring_genotype = mutation(offspring_genotype)
+    except Exception as e:
+        print(e)
     return mutated_offspring_genotype
 
 
-def selection(gen1, gen2):
-    fitness1 = convert_to_decimal(gen1['num_children']) * 2 - convert_to_decimal(gen1['smell'])
-    fitness2 = convert_to_decimal(gen2['num_children']) * 2 - convert_to_decimal(gen2['smell'])
-    return gen1 if fitness1 > fitness2 else gen2
+def selection(entity1, entity2):
+    fitness1 = fitness(entity1)
+    fitness2 = fitness(entity2)
+    return entity1.genomes if fitness1 > fitness2 else entity2.genomes
 
 
 def fitness(entity):
@@ -29,7 +32,7 @@ def fitness(entity):
     weight_for_reproduction = 1.5
 
     fitness = (weight_for_survival * entity.age +
-               weight_for_food * entity.statistic.collected_food)
+               weight_for_food * entity.statistic.collected_food + entity.statistic.children * weight_for_reproduction)
     return fitness
 
 
